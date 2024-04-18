@@ -7,7 +7,7 @@ const App = () => {
 
   useEffect(() => {
     const ws = new WebSocket("ws://localhost:8080");
-    
+
     ws.onopen = () => {
       console.log("Connected to socket server");
       setSocket(ws);
@@ -24,10 +24,14 @@ const App = () => {
     ws.onerror = (error) => {
       console.log("Error connecting to socket server", error);
     };
+
+    return () => {
+      ws.close();
+    };
   }, []);
 
-  if(!socket) {
-    return <div>Loading...</div>
+  if (!socket) {
+    return <div>Loading...</div>;
   }
 
   const handleMessage = () => {
