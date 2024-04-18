@@ -36,13 +36,18 @@ const wss = new ws_1.WebSocketServer({ server });
 wss.on("connection", (ws) => {
     ws.on("error", console.error);
     ws.on("message", (data, isBinary) => {
-        wss.clients.forEach((client) => {
-            if (client !== ws && client.readyState === ws_1.default.OPEN) {
-                console.log(client);
-                client.send(data, { binary: isBinary });
-            }
-        });
+        if (wss.clients.size <= 1) {
+            console.log("No other clients connected");
+        }
+        else {
+            wss.clients.forEach((client) => {
+                if (client !== ws && client.readyState === ws_1.default.OPEN) {
+                    client.send(data, { binary: isBinary });
+                }
+            });
+        }
     });
+    console.log("New client connected. Total clients: ", wss.clients.size);
     ws.send("ws client connected on " + new Date());
 });
 server.listen(8080, function () {
