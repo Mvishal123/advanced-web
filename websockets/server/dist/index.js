@@ -33,16 +33,17 @@ const server = http_1.default.createServer(function (request, response) {
     response.end("hi there");
 });
 const wss = new ws_1.WebSocketServer({ server });
-wss.on("connection", function connection(ws) {
+wss.on("connection", (ws) => {
     ws.on("error", console.error);
-    ws.on("message", function message(data, isBinary) {
-        wss.clients.forEach(function each(client) {
+    ws.on("message", (data, isBinary) => {
+        wss.clients.forEach((client) => {
             if (client !== ws && client.readyState === ws_1.default.OPEN) {
+                console.log(client);
                 client.send(data, { binary: isBinary });
             }
         });
     });
-    ws.send("Hello! Message From Server!!");
+    ws.send("ws client connected on " + new Date());
 });
 server.listen(8080, function () {
     console.log(new Date() + " Server is listening on port 8080");
