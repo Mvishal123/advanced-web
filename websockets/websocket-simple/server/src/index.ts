@@ -1,32 +1,63 @@
-import WebSocket, { WebSocketServer } from "ws";
-import http from "http";
+import express from "express";
+import { WebSocket, WebSocketServer } from "ws";
 
-const server = http.createServer(function (request: any, response: any) {
-  console.log(new Date() + " Received request for " + request.url);
-  response.end("hi there");
-});
-const wss = new WebSocketServer({ server });
+const app = express();
+const http = app.listen(8080);
 
-wss.on("connection", (ws) => {
-  ws.on("error", console.error);
+const wss = new WebSocketServer({ server: http });
 
-  ws.on("message", (data, isBinary) => {
-    if (wss.clients.size <= 1) {
-      console.log("No other clients connected");
-    } else {
-      wss.clients.forEach((client) => {
-        if (client !== ws && client.readyState === WebSocket.OPEN) {
-          client.send(data, { binary: isBinary });
+interface NewWebSocket extends WebSocket {
+  username?: string;
+}
+
+type Message = {
+  type: "register" | "message";
+  username: string;
+  to?: string;
+  message?: string;
+};
+
+interface Client {
+  [key: string]: NewWebSocket;
+}
+
+let clients: Client = {};
+let count = 0;
+wss.on("connection", (ws: NewWebSocket) => {
+  ws.on("message", (message) => {
+    const parsedMessage = JSON.parse(message.toString());
+
+    switch (parsedMessage.type.toLowerCase()) {
+      case "register": {
+        clients[parsedMessage.username] = ws;
+        ws.username = parsedMessage.username;
+        ws.send(
+          JSON.stringify({ message: "User registered successfully", username: parsedMessage.username })
+        );
+        break;
+      }
+
+      case "message": {
+        const parsedMessage: Message = JSON.parse(message.toString());
+        const to = parsedMessage.to;
+
+        if (to && clients[to] && clients[to].readyState === WebSocket.OPEN) {
+          clients[to].send(
+            JSON.stringify({ message: parsedMessage.message, from: parsedMessage.username })
+          );
+        } else {
+          ws.send(JSON.stringify({ message: "User not found", to: parsedMessage.to }));
         }
-      });
+
+        break
+      }
+      default: {
+        console.log("Unknown message type: " + parsedMessage.type);
+        break;
+      }
     }
   });
 
-  console.log("New client connected. Total clients: ", wss.clients.size);
-
-  ws.send("ws client connected on " + new Date());
-});
-
-server.listen(8080, function () {
-  console.log(new Date() + " Server is listening on port 8080");
+  count++;
+  console.log("New client connected: " + count);
 });
