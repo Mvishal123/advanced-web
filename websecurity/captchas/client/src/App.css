@@ -1,0 +1,60 @@
+body {
+  font-family: "Roboto", sans-serif;
+  margin: 0;
+  padding: 0;
+  background-color: #f5f5f5;
+}
+
+main {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-direction: column;
+  height: 100vh;
+}
+
+button {
+  padding: 10px;
+  border: none;
+  border-radius: 5px;
+  background-color: #007bff;
+  color: white;
+  cursor: pointer;
+}
+
+button:disabled {
+  background-color: #ccc;
+  cursor: not-allowed;
+}
+
+input {
+  padding: 10px;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  margin-bottom: 10px;
+}
+
+.input-container {
+  width: 300px;
+  display: flex;
+  flex-direction: column;
+}
+
+.credentials-container {
+  position: relative;
+  display: flex;
+  gap: 20px;
+  flex-direction: column;
+  margin-bottom: 20px;
+  border-radius: 10px;
+}
+
+.loading {
+  position: absolute;
+  inset: -10px;
+  background-color: #cccccc6d;
+  backdrop-filter: blur(2px);
+  border-radius: 10px;
+  display: grid;
+  place-content: center;
+}
