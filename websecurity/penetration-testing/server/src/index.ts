@@ -1,7 +1,9 @@
 import express, { Request, Response } from "express";
+import cors from "cors";
 
 const app = express();
 app.use(express.json());
+app.use(cors());
 
 app.get("/", (req, res) => {
   res.send("Vishal tries to hack the server. hahahaha");
@@ -21,7 +23,7 @@ app.post("/generate-otp", (req: Request, res: Response) => {
   console.log(`OTP generated for ${email} is ${otp}`);
 
   otpStore[email] = otp.toString();
-
+  console.log(otpStore);
   return res.status(200).json({ otp });
 });
 

@@ -4,8 +4,10 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = __importDefault(require("express"));
+const cors_1 = __importDefault(require("cors"));
 const app = (0, express_1.default)();
 app.use(express_1.default.json());
+app.use((0, cors_1.default)());
 app.get("/", (req, res) => {
     res.send("Vishal tries to hack the server. hahahaha");
 });
@@ -19,6 +21,7 @@ app.post("/generate-otp", (req, res) => {
     const otp = Math.floor(100000 + Math.random() * 900000);
     console.log(`OTP generated for ${email} is ${otp}`);
     otpStore[email] = otp.toString();
+    console.log(otpStore);
     return res.status(200).json({ otp });
 });
 app.post("/verify-otp", (req, res) => {
@@ -32,6 +35,7 @@ app.post("/verify-otp", (req, res) => {
         return res.status(401).json({ message: "Invalid OTP" });
     }
     console.log(`Password changed for ${email} to ${newPassword} and the OTP entered is ${otp}`);
+    delete otpStore[email];
     return res.status(200).json({ message: "Password changed successfully" });
 });
 app.listen(3000, () => {
