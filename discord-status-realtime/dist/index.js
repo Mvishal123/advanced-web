@@ -38,6 +38,8 @@ function checkUserStatus() {
             if (!member)
                 throw new Error("User not found in the guild.");
             const presence = member.presence;
+            // const activity = presence?.activities || [];
+            // console.log({ activity });
             console.log("User presence:", presence === null || presence === void 0 ? void 0 : presence.status);
             status = (presence === null || presence === void 0 ? void 0 : presence.status) || "offline";
         }
@@ -53,7 +55,8 @@ wss.on("connection", (ws) => {
     ws.send(JSON.stringify({ status }));
     client.on("presenceUpdate", (oldPresence, newPresence) => __awaiter(void 0, void 0, void 0, function* () {
         status = newPresence.status || "offline";
-        ws.send(JSON.stringify({ status }));
+        const activity = newPresence.activities[0];
+        ws.send(JSON.stringify({ status, activity }));
     }));
 });
 app.listen(3000, () => {

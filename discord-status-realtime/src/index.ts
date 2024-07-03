@@ -1,4 +1,4 @@
-import { Client, GatewayIntentBits } from "discord.js";
+import { Activity, Client, GatewayIntentBits } from "discord.js";
 import express from "express";
 import { WebSocketServer } from "ws";
 import cors from "cors";
@@ -29,6 +29,10 @@ async function checkUserStatus() {
     if (!member) throw new Error("User not found in the guild.");
 
     const presence = member.presence;
+    // const activity = presence?.activities || [];
+
+    // console.log({ activity });
+
     console.log("User presence:", presence?.status);
     status = presence?.status || "offline";
   } catch (error) {
@@ -46,7 +50,8 @@ wss.on("connection", (ws) => {
 
   client.on("presenceUpdate", async (oldPresence, newPresence) => {
     status = newPresence.status || "offline";
-    ws.send(JSON.stringify({ status }));
+    const activity = newPresence.activities[0];
+    ws.send(JSON.stringify({ status, activity }));
   });
 });
 
