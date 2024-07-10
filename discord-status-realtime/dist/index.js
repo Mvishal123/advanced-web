@@ -12,11 +12,11 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
+const cors_1 = __importDefault(require("cors"));
 const discord_js_1 = require("discord.js");
+const dotenv_1 = __importDefault(require("dotenv"));
 const express_1 = __importDefault(require("express"));
 const ws_1 = require("ws");
-const cors_1 = __importDefault(require("cors"));
-const dotenv_1 = __importDefault(require("dotenv"));
 const app = (0, express_1.default)();
 dotenv_1.default.config();
 app.use((0, cors_1.default)());
@@ -27,9 +27,11 @@ client.once("ready", () => {
     console.log("Discord bot is ready!");
     checkUserStatus();
 });
-let status = "";
+let user = {};
+let activity = null;
 function checkUserStatus() {
     return __awaiter(this, void 0, void 0, function* () {
+        var _a;
         try {
             const guild = client.guilds.cache.first();
             if (!guild)
@@ -38,27 +40,28 @@ function checkUserStatus() {
             if (!member)
                 throw new Error("User not found in the guild.");
             const presence = member.presence;
-            // const activity = presence?.activities || [];
-            // console.log({ activity });
-            console.log("User presence:", presence === null || presence === void 0 ? void 0 : presence.status);
-            status = (presence === null || presence === void 0 ? void 0 : presence.status) || "offline";
+            user["userId"] = member.user.id;
+            user["avatar"] = member.user.avatar || "";
+            user["status"] = (presence === null || presence === void 0 ? void 0 : presence.status) || "offline";
+            // console.log({ user });
+            activity = (_a = member.presence) === null || _a === void 0 ? void 0 : _a.activities[0];
         }
         catch (error) {
             console.error("Error fetching user status:", error);
-            status = "offline";
+            user["status"] = "offline";
         }
     });
 }
 client.login(process.env.DISCORD_TOKEN);
 const wss = new ws_1.WebSocketServer({ server: app.listen(8080) });
 wss.on("connection", (ws) => {
-    ws.send(JSON.stringify({ status }));
+    ws.send(JSON.stringify({ type: "user_status", user, activity: activity }));
     client.on("presenceUpdate", (oldPresence, newPresence) => __awaiter(void 0, void 0, void 0, function* () {
-        status = newPresence.status || "offline";
+        user["status"] = newPresence.status || "offline";
         const activity = newPresence.activities[0];
-        ws.send(JSON.stringify({ status, activity }));
+        ws.send(JSON.stringify({ type: "user_activity", activity, user }));
     }));
 });
-app.listen(3000, () => {
+app.listen(3001, () => {
     console.log("Server is running on port 3000");
 });

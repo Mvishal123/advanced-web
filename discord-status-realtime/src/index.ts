@@ -1,8 +1,8 @@
-import { Activity, Client, GatewayIntentBits } from "discord.js";
+import cors from "cors";
+import { Client, GatewayIntentBits } from "discord.js";
+import dotenv from "dotenv";
 import express from "express";
 import { WebSocketServer } from "ws";
-import cors from "cors";
-import dotenv from "dotenv";
 
 const app = express();
 dotenv.config();
@@ -17,7 +17,8 @@ client.once("ready", () => {
   checkUserStatus();
 });
 
-let status: string = "";
+let user: Record<string, string | boolean> = {};
+let activity = null;
 
 async function checkUserStatus() {
   try {
@@ -29,15 +30,14 @@ async function checkUserStatus() {
     if (!member) throw new Error("User not found in the guild.");
 
     const presence = member.presence;
-    // const activity = presence?.activities || [];
-
-    // console.log({ activity });
-
-    console.log("User presence:", presence?.status);
-    status = presence?.status || "offline";
+    user["userId"] = member.user.id;
+    user["avatar"] = member.user.avatar || "";
+    user["status"] = presence?.status || "offline";
+    // console.log({ user });
+    activity = member.presence?.activities[0];
   } catch (error) {
     console.error("Error fetching user status:", error);
-    status = "offline";
+    user["status"] = "offline";
   }
 }
 
@@ -46,15 +46,16 @@ client.login(process.env.DISCORD_TOKEN);
 const wss = new WebSocketServer({ server: app.listen(8080) });
 
 wss.on("connection", (ws) => {
-  ws.send(JSON.stringify({ status }));
+  ws.send(JSON.stringify({ type: "user_status", user, activity: activity! }));
 
   client.on("presenceUpdate", async (oldPresence, newPresence) => {
-    status = newPresence.status || "offline";
+    user["status"] = newPresence.status || "offline";
     const activity = newPresence.activities[0];
-    ws.send(JSON.stringify({ status, activity }));
+
+    ws.send(JSON.stringify({ type: "user_activity", activity, user }));
   });
 });
 
-app.listen(3000, () => {
+app.listen(3001, () => {
   console.log("Server is running on port 3000");
 });
