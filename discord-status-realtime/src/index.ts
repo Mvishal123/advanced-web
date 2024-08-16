@@ -1,12 +1,20 @@
 import cors from "cors";
-import { Client, GatewayIntentBits } from "discord.js";
+import { Client, GatewayIntentBits, User } from "discord.js";
 import dotenv from "dotenv";
 import express from "express";
-import { WebSocketServer } from "ws";
+import { WebSocket, WebSocketServer } from "ws";
+import { v4 as uuidv4 } from "uuid";
 
 const app = express();
 dotenv.config();
 app.use(cors());
+
+type UserDetails = {
+  ws: WebSocket;
+  message: String[];
+}
+
+const activeUsers: Record<string, UserDetails> = {}
 
 const client = new Client({
   intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildPresences],
@@ -30,10 +38,12 @@ async function checkUserStatus() {
     if (!member) throw new Error("User not found in the guild.");
 
     const presence = member.presence;
+
     user["userId"] = member.user.id;
     user["avatar"] = member.user.avatar || "";
     user["status"] = presence?.status || "offline";
-    // console.log({ user });
+    user["username"] = member.user.username || "Vishal";
+
     activity = member.presence?.activities[0];
   } catch (error) {
     console.error("Error fetching user status:", error);
@@ -41,11 +51,15 @@ async function checkUserStatus() {
   }
 }
 
-client.login(process.env.DISCORD_TOKEN);
+const logWs = (ws: WebSocket) => {
+  wss.clients.forEach((client) => {
+    if (client == ws) {
+      console.log(`${client}`);
+    }
+  });
+};
 
-const wss = new WebSocketServer({ server: app.listen(8080) });
-
-wss.on("connection", (ws) => {
+const handleDiscordOnConnection = (ws: WebSocket) => {
   ws.send(JSON.stringify({ type: "user_status", user, activity: activity! }));
 
   client.on("presenceUpdate", async (oldPresence, newPresence) => {
@@ -54,8 +68,19 @@ wss.on("connection", (ws) => {
 
     ws.send(JSON.stringify({ type: "user_activity", activity, user }));
   });
+};
+
+client.login(process.env.DISCORD_TOKEN);
+
+const wss = new WebSocketServer({ server: app.listen(8080) });
+
+wss.on("connection", (ws: WebSocket, req) => {
+  const uuid = uuidv4();
+  console.log({ uuid });
+
+  handleDiscordOnConnection(ws);
 });
 
 app.listen(3001, () => {
-  console.log("Server is running on port 3000");
+  console.log("Server is running on port 3001");
 });

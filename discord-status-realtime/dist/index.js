@@ -17,6 +17,7 @@ const discord_js_1 = require("discord.js");
 const dotenv_1 = __importDefault(require("dotenv"));
 const express_1 = __importDefault(require("express"));
 const ws_1 = require("ws");
+const uuid_1 = require("uuid");
 const app = (0, express_1.default)();
 dotenv_1.default.config();
 app.use((0, cors_1.default)());
@@ -43,7 +44,7 @@ function checkUserStatus() {
             user["userId"] = member.user.id;
             user["avatar"] = member.user.avatar || "";
             user["status"] = (presence === null || presence === void 0 ? void 0 : presence.status) || "offline";
-            // console.log({ user });
+            user["username"] = member.user.username || "Vishal";
             activity = (_a = member.presence) === null || _a === void 0 ? void 0 : _a.activities[0];
         }
         catch (error) {
@@ -52,16 +53,28 @@ function checkUserStatus() {
         }
     });
 }
-client.login(process.env.DISCORD_TOKEN);
-const wss = new ws_1.WebSocketServer({ server: app.listen(8080) });
-wss.on("connection", (ws) => {
+const logWs = (ws) => {
+    wss.clients.forEach((client) => {
+        if (client == ws) {
+            console.log(`${client}`);
+        }
+    });
+};
+const handleDiscordOnConnection = (ws) => {
     ws.send(JSON.stringify({ type: "user_status", user, activity: activity }));
     client.on("presenceUpdate", (oldPresence, newPresence) => __awaiter(void 0, void 0, void 0, function* () {
         user["status"] = newPresence.status || "offline";
         const activity = newPresence.activities[0];
         ws.send(JSON.stringify({ type: "user_activity", activity, user }));
     }));
+};
+client.login(process.env.DISCORD_TOKEN);
+const wss = new ws_1.WebSocketServer({ server: app.listen(8080) });
+wss.on("connection", (ws, req) => {
+    const uuid = (0, uuid_1.v4)();
+    console.log({ uuid });
+    handleDiscordOnConnection(ws);
 });
 app.listen(3001, () => {
-    console.log("Server is running on port 3000");
+    console.log("Server is running on port 3001");
 });
