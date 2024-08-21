@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: configtest-config
+data:
+  name: "Vishal"
+  age: "20"

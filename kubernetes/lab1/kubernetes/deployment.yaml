@@ -1,0 +1,32 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: configtest-deployment
+  labels:
+    app: configtest
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: configtest
+  template:
+    metadata:
+      labels:
+        app: configtest
+    spec:
+      containers:
+        - name: configtest
+          image: vishal0509/configtest
+          ports:
+            - containerPort: 3000
+          env:
+            - name: NAME
+              valueFrom:
+                configMapKeyRef:
+                  name: configtest-config
+                  key: name
+            - name: AGE
+              valueFrom:
+                configMapKeyRef:
+                  name: configtest-config
+                  key: age
