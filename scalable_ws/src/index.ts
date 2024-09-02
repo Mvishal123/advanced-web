@@ -1,7 +1,7 @@
 import { WebSocketServer } from "ws";
 import { UserManager } from "./userManager";
 
-const wss = new WebSocketServer({ port: 8080 });
+const wss = new WebSocketServer({ port: 8081 });
 
 wss.on("connection", (userSocket) => {
   UserManager.getInstance().addUser(userSocket);

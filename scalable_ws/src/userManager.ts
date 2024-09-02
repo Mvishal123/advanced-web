@@ -1,10 +1,11 @@
 import { WebSocket } from "ws";
-import { MessageHandler, UserType } from "./types";
+import { MessageHandler, MessageType, UserType } from "./types";
+import { RedisManager } from "./redisManager";
 
 export class UserManager {
   private users: Record<string, UserType>;
   private roomDetails: Record<string, string[]>;
-  static instance: UserManager;
+  private static instance: UserManager;
 
   private constructor() {
     this.users = {};
@@ -46,58 +47,85 @@ export class UserManager {
 
       case "SEND_MESSAGE":
         if (message) {
-          this.sendMessage(userId, roomId, message);
+          RedisManager.getInstance().publishMessage(
+            roomId,
+            JSON.stringify({ userId, message })
+          );
         }
         break;
     }
-    console.log(this.users);
+    // console.log(this.users);
   }
 
   private subscribe(userId: string, roomId: string) {
     if (this.users[userId]?.rooms.includes(roomId)) {
       return;
     }
-    if (this.isFirstSubscription(roomId)) {
-    }
+
     this.users[userId].rooms = [...this.users[userId].rooms, roomId];
+
+    // reverseUsers logic
+    if (!this.roomDetails[roomId]?.includes(userId)) {
+      this.roomDetails[roomId] = (this.roomDetails[roomId] || []).concat(
+        userId
+      );
+    }
+    console.log("ROOM DETAILS: ", this.roomDetails);
+
+    // subscribe to PUB/SUB
+    if (this.isFirstSubscription(roomId, "SUBSCRIBE")) {
+      RedisManager.getInstance().subscribeRoom(roomId);
+      console.log("subscribing to pub/sub...");
+    }
   }
 
   private unsubcribe(userId: string, roomId: string) {
-    if (this.users[userId].rooms.includes(roomId)) {
+    if (this.users[userId]?.rooms?.includes(roomId)) {
       this.users[userId].rooms = this.users[userId].rooms.filter(
         (room) => room !== roomId
       );
     }
+
+    // reverseUsers
+    if (this.roomDetails[roomId]?.includes(userId)) {
+      this.roomDetails[roomId] = this.roomDetails[roomId].filter(
+        (user) => userId !== user
+      );
+    }
+
+    // unsubscribe from PUB/SUB
+    if (this.isFirstSubscription(roomId, "UNSUBSCRIBE")) {
+      RedisManager.getInstance().unsubscribeRoom(roomId);
+      console.log("unsubscribing to pub/sub...");
+    }
   }
 
-  private sendMessage(userId: string, roomId: string, message: string) {
-    const isUserPartOfRoom = this.users[userId].rooms.includes(roomId);
-    if (!isUserPartOfRoom) {
-      this.emit(this.users[userId].ws, "User not part of the room.");
-      return;
-    }
-    Object.keys(this.users).forEach((user) => {
-      if (this.users[user].rooms.includes(roomId) && user !== userId) {
-        const _message = {
-          type: "message",
-          message: message,
-        };
-        this.emit(this.users[user].ws, JSON.stringify(_message));
+  public sendMessage(_roomId: string, _message: string) {
+    const { message, userId }: MessageType = JSON.parse(_message);
+    this.roomDetails[_roomId]?.forEach((user) => {
+      if (user !== userId) {
+        this.emit(this.users[user].ws, message);
       }
     });
   }
 
-  private isFirstSubscription(roomId: string) {
-    let count = 0;
-    Object.keys(this.users).forEach((user) => {
-      if (this.users[user].rooms.includes(roomId)) {
-        count++;
-      }
-    });
+  private isFirstSubscription(
+    roomId: string,
+    type: "SUBSCRIBE" | "UNSUBSCRIBE"
+  ) {
+    const usersInRoom = this.roomDetails[roomId]?.length;
+    console.log({ usersInRoom });
 
-    if (count === 1) {
-      return true;
+    if ((type = "SUBSCRIBE")) {
+      if (usersInRoom === 1) {
+        return true;
+      }
+    } else if (type === "UNSUBSCRIBE") {
+      if (usersInRoom === 0) {
+        return true;
+      }
     }
+
     return false;
   }
 

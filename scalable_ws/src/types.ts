@@ -11,3 +11,8 @@ export type MessageHandler = {
   roomId: string;
   message?: string;
 };
+
+export interface MessageType {
+  message: string;
+  userId: string;
+}
