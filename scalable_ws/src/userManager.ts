@@ -28,7 +28,24 @@ export class UserManager {
       rooms: [],
     };
     this.users[userId] = userDetails;
+    this.removeUserHandler(ws, userId);
     ws.send(JSON.stringify({ type: "userId", userId }));
+  }
+
+  private removeUserHandler(ws: WebSocket, userId: string) {
+    ws.on("close", () => {
+      console.log("Removing user...");
+
+      delete this.users[userId];
+
+      Object.keys(this.roomDetails).forEach((room) => {
+        const currentRoom = this.roomDetails[room];
+        this.roomDetails[room] = currentRoom.filter((user) => user !== userId);
+      });
+
+      console.log(this.users);
+      console.log(this.roomDetails);
+    });
   }
 
   handleMessage(data: MessageHandler) {
@@ -116,7 +133,7 @@ export class UserManager {
     const usersInRoom = this.roomDetails[roomId]?.length;
     console.log({ usersInRoom });
 
-    if ((type = "SUBSCRIBE")) {
+    if (type === "SUBSCRIBE") {
       if (usersInRoom === 1) {
         return true;
       }

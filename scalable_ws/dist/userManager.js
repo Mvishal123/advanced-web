@@ -20,7 +20,20 @@ class UserManager {
             rooms: [],
         };
         this.users[userId] = userDetails;
+        this.removeUserHandler(ws, userId);
         ws.send(JSON.stringify({ type: "userId", userId }));
+    }
+    removeUserHandler(ws, userId) {
+        ws.on("close", () => {
+            console.log("Removing user...");
+            delete this.users[userId];
+            Object.keys(this.roomDetails).forEach((room) => {
+                const currentRoom = this.roomDetails[room];
+                this.roomDetails[room] = currentRoom.filter((user) => user !== userId);
+            });
+            console.log(this.users);
+            console.log(this.roomDetails);
+        });
     }
     handleMessage(data) {
         const { roomId, type, userId, message } = data;
@@ -87,7 +100,7 @@ class UserManager {
         var _a;
         const usersInRoom = (_a = this.roomDetails[roomId]) === null || _a === void 0 ? void 0 : _a.length;
         console.log({ usersInRoom });
-        if ((type = "SUBSCRIBE")) {
+        if (type === "SUBSCRIBE") {
             if (usersInRoom === 1) {
                 return true;
             }
