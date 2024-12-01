@@ -23,19 +23,16 @@ io.on("connection", (socket) => __awaiter(void 0, void 0, void 0, function* () {
         client.quit();
     });
     socket.on("submission", (data) => __awaiter(void 0, void 0, void 0, function* () {
-        // if (!data.userId) {
-        //   socket.emit("error", { message: "Invalid user ID" });
-        //   return;
-        // }
-        // console.log("[WS]: Submission received", data.userId);
-        // await client.subscribe(data.userId, (res: string) => {
-        //   const data = JSON.parse(res);
-        //   console.log("[WS]: Submission result", data);
-        //   socket.emit("result", { ...data });
-        // });
-        console.log("Submission received", data);
-        const parsedData = JSON.parse(data);
-        console.log("Parsed data", parsedData.userId);
+        data = JSON.parse(data);
+        if (!data.userId) {
+            socket.emit("error", { message: "Invalid user ID" });
+            return;
+        }
+        yield client.subscribe(data.userId, (res) => {
+            const data = JSON.parse(res);
+            console.log("[WS]: Submission result", data);
+            socket.emit("result", Object.assign({}, data));
+        });
     }));
 }));
 httpServer.listen(8080, () => {

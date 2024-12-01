@@ -14,7 +14,7 @@ const client = (0, redis_1.createClient)();
 const processSubmission = (submission) => __awaiter(void 0, void 0, void 0, function* () {
     console.log("Processing submission", submission);
     yield new Promise((resolve) => setTimeout(resolve, 1000));
-    client.publish("submission", JSON.stringify(submission));
+    client.publish(submission.userId, JSON.stringify(submission));
 });
 (function () {
     return __awaiter(this, void 0, void 0, function* () {
