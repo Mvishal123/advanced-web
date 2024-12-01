@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html>
+  <body>
+    <p>HEY there</p>
+    <div id="messages"></div>
+    <script>
+      const eventSource = new EventSource("http://localhost:3000/events");
+
+      console.log({ eventSource });
+      
+      eventSource.onmessage = (event) => {
+        const message = JSON.parse(event.data);
+        document.getElementById(
+          "messages"
+        ).innerHTML += `<p>${message.message} - ${message.time}</p>`;
+      };
+
+      eventSource.onerror = () => {
+        console.log("Connection lost, trying to reconnect...");
+      };
+    </script>
+  </body>
+</html>
